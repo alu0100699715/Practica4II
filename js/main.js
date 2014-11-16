@@ -8,9 +8,17 @@ recognizer.lang = "es-ES";
 recognizer.continuous = true;
 var dae;
 var renderer;
+var scene;
+var camera;
+var m;
+var videoScene;
+var videoCam;
+var tmp;
+var r;
+var up = false;
 
 function CargarCam(){
- video.width = 640;
+  video.width = 640;
   video.height = 480;
   video.loop = true;
   video.volume = 0;
@@ -111,16 +119,16 @@ function CargarModelo(){
     detector.setContinueMode(true);
 
 
-    var tmp = new Float32Array(16);
+    tmp = new Float32Array(16);
 
-    var renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer();
     renderer.setSize(960, 720);
 
     var glCanvas = renderer.domElement;
     var s = glCanvas.style;
     document.body.appendChild(glCanvas);
 
-    var scene = new THREE.Scene();
+    scene = new THREE.Scene();
     var light = new THREE.PointLight(0xffffff);
     light.position.set(400, 500, 100);
     scene.add(light);
@@ -132,7 +140,7 @@ function CargarModelo(){
     scene.add(light);
 
     // Create a camera and a marker root object for your Three.js scene.
-    var camera = new THREE.Camera();
+    camera = new THREE.Camera();
     scene.add(camera);
     
     // Next we need to make the Three.js camera use the FLARParam matrix.
@@ -148,8 +156,8 @@ function CargarModelo(){
     );
     plane.material.depthTest = false;
     plane.material.depthWrite = false;
-    var videoCam = new THREE.Camera();
-    var videoScene = new THREE.Scene();
+    videoCam = new THREE.Camera();
+    videoScene = new THREE.Scene();
     videoScene.add(plane);
     videoScene.add(videoCam);
 
@@ -194,7 +202,7 @@ function CargarModelo(){
         markers[currId].transform = Object.asCopy(resultMat);
       }
       for (var i in markers) {
-        var r = markers[i];
+        r = markers[i];
         if (r.age > 1) {
           delete markers[i];
           scene.remove(r.model);
@@ -202,7 +210,7 @@ function CargarModelo(){
         r.age++;
       }
       for (var i in markers) {
-        var m = markers[i];
+        m = markers[i];
         if (!m.model) {
           m.model = new THREE.Object3D();
 	  var loader = new THREE.ColladaLoader();
@@ -210,15 +218,17 @@ function CargarModelo(){
 	  loader.load( './modelo/monster.dae', function ( collada ) {
 	      dae = collada.scene;
 	      dae.scale.x = dae.scale.y = dae.scale.z = 0.08;
-          dae.position.setx = 60000;
-	      dae.updateMatrix();
-	      
+          dae.updateMatrix();
 
 	  } );
 
           //cilindro.position.z = -50;
           //sphere.doubleSided = true;
           m.model.matrixAutoUpdate = false;
+        if(!up){
+                recognizer.start();
+                up = true; 
+            }
           m.model.add(dae);
           scene.add(m.model);
         }
@@ -232,18 +242,125 @@ function CargarModelo(){
       renderer.render(scene, camera);
     }, 15);
     
+    
+    
 };
 
-recognizer.onresult = function(event) {
-    
-      for (var i = event.resultIndex; i < event.results.length; ++i) {
+    recognizer.onresult = function(event) {
+        var mov = 50;
+	   for (var i = event.resultIndex; i < event.results.length; ++i) {
 	       if (event.results[i].isFinal) {
                total = event.results[i][0].transcript;
 	       }
+          
 	   }
+     
+     
+      
     console.log(total);
+    
+       
+  /*// y lo que sigue es lo mismo que está dentro del for cuando reconoce el modelo por primera vez, un copy paste:
+  m.model.matrixAutoUpdate = false;
+  monster.translateX(mov); // monster es tu dae, mov es la cantidad que se mueve
+  monster.updateMatrix();
+  m.model.add(monster);
+  scene.add(m.model);
+  copyMatrix(m.transform, tmp);
+  m.model.matrix.setFromArray(tmp);
+  m.model.matrixWorldNeedsUpdate = true;
+  renderer.clear();
+  renderer.render(scene,camera);*/
+   
+     if(total == "derecha" || total == " derecha"){
+         
+          if (m.model){
+            console.log("Elimino");
+            scene.remove(m.model);
+            renderer.render(scene,camera);
+            m.model = new THREE.Object3D();
+          }
+         
+          console.log("Entro en derecha");
+          m.model.matrixAutoUpdate = false;
+          dae.translateX(mov);
+          dae.updateMatrix();
+          m.model.add(dae);
+          scene.add(m.model);
+          copyMatrix(m.transform, tmp);
+          m.model.matrix.setFromArray(tmp);
+          m.model.matrixWorldNeedsUpdate = true;
+          renderer.clear();
+          renderer.render(scene,camera);
+      }
         
-};
+      else if(total == "izquierda" || total == " izquierda"){
+           if (m.model){
+            console.log("Elimino");
+            scene.remove(m.model);
+            renderer.render(scene,camera);
+            m.model = new THREE.Object3D();
+          }
+         
+          console.log("Entro en izquierda");
+          m.model.matrixAutoUpdate = false;
+          dae.translateX(-mov);
+          dae.updateMatrix();
+          m.model.add(dae);
+          scene.add(m.model);
+          copyMatrix(m.transform, tmp);
+          m.model.matrix.setFromArray(tmp);
+          m.model.matrixWorldNeedsUpdate = true;
+          renderer.clear();
+          renderer.render(scene,camera);
+      }
+        
+      else if(total == "arriba" || total == " arriba"){
+          if (m.model){
+            console.log("Elimino");
+            scene.remove(m.model);
+            renderer.render(scene,camera);
+            m.model = new THREE.Object3D();
+          }
+         
+          console.log("Entro en arriba");
+          m.model.matrixAutoUpdate = false;
+          dae.translateY(mov);
+          dae.updateMatrix();
+          m.model.add(dae);
+          scene.add(m.model);
+          copyMatrix(m.transform, tmp);
+          m.model.matrix.setFromArray(tmp);
+          m.model.matrixWorldNeedsUpdate = true;
+          renderer.clear();
+          renderer.render(scene,camera);
+      }
+    
+      else if(total == "abajo" || total == " abajo"){
+          if (m.model){
+            console.log("Elimino");
+            scene.remove(m.model);
+            renderer.render(scene,camera);
+            m.model = new THREE.Object3D();
+          }
+         
+          console.log("Entro en abajo");
+          m.model.matrixAutoUpdate = false;
+          dae.translateY(-mov);
+          dae.updateMatrix();
+          m.model.add(dae);
+          scene.add(m.model);
+          copyMatrix(m.transform, tmp);
+          m.model.matrix.setFromArray(tmp);
+          m.model.matrixWorldNeedsUpdate = true;
+          renderer.clear();
+          renderer.render(scene,camera);
+      }
+      
+     else{
+         console.log("No reconoce comando");
+     }
+    };
      
   
 
